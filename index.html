@@ -1,0 +1,592 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>สมุดรายจ่าย</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Prompt:wght@500;600&display=swap">
+<style>
+/* Layout: ฟอร์มและสรุปหมวดอยู่คอลัมน์ซ้าย รายการรายวันอยู่คอลัมน์ขวา บนมือถือเรียงลงมาตามลำดับการใช้งาน */
+:root {
+  --bg: #eef4f3;
+  --surface: #ffffff;
+  --fg: #10302d;
+  --muted: #587270;
+  --line: #d6e2e0;
+  --track: #e3ecea;
+  --accent: #0d766e;
+  --accent-fg: #ffffff;
+  --accent-soft: #dcefed;
+  --danger: #b3263e;
+  --c-food: #e0702f;
+  --c-transport: #2b7cd3;
+  --c-shopping: #8a58d1;
+  --c-bills: #c99a12;
+  --c-health: #d4415b;
+  --c-fun: #2a9d68;
+  --c-other: #74879a;
+  --font-body: 'IBM Plex Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Prompt', 'IBM Plex Sans Thai', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1716;
+    --surface: #132221;
+    --fg: #e2efed;
+    --muted: #8da8a5;
+    --line: #24403d;
+    --track: #1d3331;
+    --accent: #46c9bd;
+    --accent-fg: #06211f;
+    --accent-soft: #163733;
+    --danger: #ff7b92;
+    --c-food: #f08a52;
+    --c-transport: #5aa0ea;
+    --c-shopping: #a883e6;
+    --c-bills: #e6b93a;
+    --c-health: #ee6b82;
+    --c-fun: #4cc58a;
+    --c-other: #98a9b6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1716;
+  --surface: #132221;
+  --fg: #e2efed;
+  --muted: #8da8a5;
+  --line: #24403d;
+  --track: #1d3331;
+  --accent: #46c9bd;
+  --accent-fg: #06211f;
+  --accent-soft: #163733;
+  --danger: #ff7b92;
+  --c-food: #f08a52;
+  --c-transport: #5aa0ea;
+  --c-shopping: #a883e6;
+  --c-bills: #e6b93a;
+  --c-health: #ee6b82;
+  --c-fun: #4cc58a;
+  --c-other: #98a9b6;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.top h1 { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: 0; }
+.monthnav { display: flex; align-items: center; gap: 4px; }
+.monthnav .m { min-width: 9.5em; text-align: center; font-family: var(--font-display); font-weight: 500; font-size: 16px; }
+.icon-btn {
+  display: inline-grid; place-items: center; width: 38px; height: 38px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--fg);
+}
+.icon-btn:hover:not(:disabled) { border-color: var(--accent); }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.link-btn { background: none; border: 0; padding: 6px 8px; color: var(--accent); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.stats > div { padding: 14px 18px; min-width: 0; }
+.stats > div + div { border-left: 1px solid var(--line); }
+.stats dt { font-size: 13px; color: var(--muted); }
+.stats dd { margin: 2px 0 0; font-family: var(--font-display); font-weight: 500; font-size: 20px; overflow-wrap: anywhere; }
+.stats dd.big { font-size: 30px; font-weight: 600; color: var(--accent); }
+
+.notice { margin: 0; padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); border: 1px solid var(--line); font-size: 14px; }
+
+/* layout */
+.layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-content: start;
+  grid-template-areas: "form" "summary" "list"; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.card > h2 { font-family: var(--font-display); font-weight: 500; font-size: 17px; margin-bottom: 14px; }
+#form-card { grid-area: form; }
+#summary-card { grid-area: summary; align-self: start; }
+#list-card { grid-area: list; }
+@media (min-width: 840px) {
+  .layout { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); grid-template-rows: auto 1fr;
+    grid-template-areas: "form list" "summary list"; }
+  #list-card { align-self: start; }
+}
+
+/* form */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, fieldset legend { font-size: 13px; color: var(--muted); padding: 0; }
+form { display: flex; flex-direction: column; gap: 14px; }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+input[type="text"], input[type="date"] {
+  width: 100%; min-width: 0; height: 44px; padding: 0 12px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+input[type="text"]:focus-visible, input[type="date"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.amount-wrap { position: relative; }
+.amount-wrap span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-family: var(--font-display); pointer-events: none; }
+#amount { padding-left: 30px; font-family: var(--font-display); font-weight: 500; font-size: 18px; font-variant-numeric: tabular-nums; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset legend { margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--bg); font-size: 14px; line-height: 1.3;
+}
+.chip input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.err { margin: 0; color: var(--danger); font-size: 13px; }
+.primary {
+  height: 46px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-fg);
+  font-weight: 600; font-size: 16px;
+}
+.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.primary:disabled { opacity: .6; cursor: default; }
+
+/* summary */
+.donut { position: relative; width: min(100%, 190px); margin: 0 auto 16px; aspect-ratio: 1; }
+.donut svg { width: 100%; height: 100%; display: block; }
+.donut .mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; padding: 0 26px; }
+.donut .mid small { color: var(--muted); font-size: 12px; }
+.donut .mid b { font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.2; overflow-wrap: anywhere; }
+.cats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.cat-head { display: flex; align-items: center; gap: 9px; }
+.cat-name { flex: 1; min-width: 0; }
+.cat-amt { font-family: var(--font-display); font-weight: 500; }
+.cat-pct { width: 3.2em; text-align: right; color: var(--muted); font-size: 13px; }
+.bar { height: 6px; border-radius: 3px; background: var(--track); margin-top: 6px; overflow: hidden; }
+.bar > span { display: block; height: 100%; border-radius: 3px; }
+@media (prefers-reduced-motion: no-preference) { .bar > span { transition: width .3s ease; } }
+
+/* list */
+.day + .day { margin-top: 20px; }
+.day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+.day-h .t { font-family: var(--font-display); font-weight: 500; color: var(--muted); }
+.items { list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item .main { min-width: 0; display: flex; flex-direction: column; }
+.item .title { overflow-wrap: anywhere; }
+.item .sub { font-size: 13px; color: var(--muted); }
+.item .amt { font-family: var(--font-display); font-weight: 500; text-align: right; }
+.del { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 0; background: none; color: var(--muted); border-radius: 8px; }
+.del:hover { color: var(--danger); background: var(--bg); }
+.del-space { width: 36px; }
+.empty { margin: 0; padding: 28px 8px; text-align: center; color: var(--muted); }
+.foot { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* toast */
+.toast-host { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; pointer-events: none;
+  padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 12px; max-width: 480px; background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+.toast button { background: none; border: 0; color: inherit; font-weight: 600; text-decoration: underline; padding: 4px; }
+
+@media (max-width: 520px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats > div:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--line); }
+  .stats > div:nth-child(2) { border-left: 0; }
+  .card { padding: 16px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>สมุดรายจ่าย</h1>
+    <div class="monthnav" role="group" aria-label="เลือกเดือน">
+      <button type="button" class="icon-btn" id="prev" aria-label="เดือนก่อนหน้า">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="m" id="month-label" aria-live="polite"></span>
+      <button type="button" class="icon-btn" id="next" aria-label="เดือนถัดไป">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button type="button" class="link-btn" id="jump" hidden>เดือนนี้</button>
+    </div>
+  </header>
+
+  <dl class="stats num">
+    <div><dt>รายจ่ายรวม</dt><dd class="big" id="st-total">฿0</dd></div>
+    <div><dt>เฉลี่ยต่อวัน</dt><dd id="st-avg">฿0</dd></div>
+    <div><dt>จำนวนรายการ</dt><dd id="st-count">0</dd></div>
+  </dl>
+
+  <p class="notice" id="sample-note" role="status" hidden>กำลังแสดงข้อมูลตัวอย่าง เมื่อบันทึกรายการแรกของคุณ ตัวอย่างนี้จะหายไปเอง</p>
+
+  <main class="layout">
+    <section class="card" id="form-card" aria-labelledby="form-h">
+      <h2 id="form-h">เพิ่มรายจ่าย</h2>
+      <form id="form" novalidate>
+        <div class="row2">
+          <div class="field">
+            <label for="amount">จำนวนเงิน (บาท)</label>
+            <div class="amount-wrap"><span aria-hidden="true">฿</span><input type="text" id="amount" inputmode="decimal" autocomplete="off" placeholder="0" aria-describedby="amount-err"></div>
+          </div>
+          <div class="field">
+            <label for="date">วันที่</label>
+            <input type="date" id="date">
+          </div>
+        </div>
+        <p class="err" id="amount-err" role="alert" hidden></p>
+        <fieldset>
+          <legend>หมวดหมู่</legend>
+          <div class="chips" id="chips"></div>
+        </fieldset>
+        <div class="field">
+          <label for="note">บันทึกเพิ่มเติม (ไม่ใส่ก็ได้)</label>
+          <input type="text" id="note" maxlength="80" autocomplete="off" placeholder="เช่น ข้าวมันไก่ ร้านหน้าปากซอย">
+        </div>
+        <button type="submit" class="primary" id="save">บันทึก</button>
+      </form>
+    </section>
+
+    <section class="card" id="summary-card" aria-labelledby="sum-h">
+      <h2 id="sum-h">สรุปตามหมวด</h2>
+      <div id="summary"></div>
+    </section>
+
+    <section class="card" id="list-card" aria-labelledby="list-h">
+      <h2 id="list-h">รายการรายวัน</h2>
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <p class="foot" id="store-note"></p>
+</div>
+
+<div class="toast-host"><div class="toast" id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-act" hidden></button></div></div>
+
+<script>
+(function () {
+  'use strict';
+  var CATS = [
+    { id: 'food', name: 'อาหารและเครื่องดื่ม' },
+    { id: 'transport', name: 'เดินทาง' },
+    { id: 'shopping', name: 'ช้อปปิ้ง' },
+    { id: 'bills', name: 'บิลและค่าสาธารณูปโภค' },
+    { id: 'health', name: 'สุขภาพ' },
+    { id: 'fun', name: 'บันเทิง' },
+    { id: 'other', name: 'อื่น ๆ' }
+  ];
+  var CAT = {};
+  CATS.forEach(function (c) { CAT[c.id] = c; });
+  var LS_KEY = 'sumud-rayjai-v1';
+
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseYmd(s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function r2(n) { return Math.round(n * 100) / 100; }
+  var nf0 = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 });
+  var nf2 = new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function money(n) { n = r2(n); return '฿' + (Number.isInteger(n) ? nf0.format(n) : nf2.format(n)); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- state ---------- */
+  var dbEntries = [];
+  var localEntries = [];
+  var dbRef = null;
+  var pending = !!(window.claude && window.claude.use);
+  var slow = false;
+  var slowTimer = null;
+  var now0 = new Date();
+  var view = { y: now0.getFullYear(), m: now0.getMonth() };
+
+  function validEntry(o) {
+    return o && typeof o.amount === 'number' && o.amount > 0 && typeof o.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.date);
+  }
+  function norm(o, id) {
+    return {
+      id: id, amount: o.amount, cat: CAT[o.cat] ? o.cat : 'other',
+      note: typeof o.note === 'string' ? o.note : '', date: o.date,
+      ts: typeof o.ts === 'number' ? o.ts : 0
+    };
+  }
+  function loadLocal() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+      if (!Array.isArray(raw)) return [];
+      return raw.filter(validEntry).map(function (o, i) { return norm(o, o.id || 'l_' + i); });
+    } catch (e) { return []; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(localEntries)); } catch (e) { /* ignore */ }
+  }
+  localEntries = loadLocal();
+
+  function sampleEntries() {
+    var t = new Date();
+    var spec = [
+      [0, 'food', 'ข้าวมันไก่', 60], [0, 'transport', 'วินมอเตอร์ไซค์', 40], [0, 'food', 'กาแฟเย็น', 55],
+      [1, 'shopping', 'น้ำยาล้างจาน ถุงขยะ', 129], [1, 'food', 'ก๋วยเตี๋ยวเรือ', 50],
+      [2, 'bills', 'ค่าอินเทอร์เน็ต', 599], [3, 'health', 'ยาแก้หวัด', 85], [3, 'fun', 'ดูหนัง', 220],
+      [4, 'food', 'ข้าวกล่อง', 70], [5, 'transport', 'น้ำมันรถ', 300]
+    ];
+    return spec.map(function (s, i) {
+      var back = Math.min(s[0], t.getDate() - 1);
+      var d = new Date(t.getFullYear(), t.getMonth(), t.getDate() - back);
+      return { id: 's_' + i, sample: true, amount: s[3], cat: s[1], note: s[2], date: ymd(d), ts: 1000 - i };
+    });
+  }
+
+  /* ---------- storage ---------- */
+  async function addEntry(rec) {
+    var body = { amount: rec.amount, cat: rec.cat, note: rec.note, date: rec.date, ts: Date.now() };
+    if (dbRef) {
+      try { await dbRef.add(body); return; }
+      catch (e) {
+        if (e && e.code === 'quota_exceeded') { toast('ที่เก็บข้อมูลเต็มแล้ว ลบรายการเก่าบางส่วนก่อนจึงจะเพิ่มได้'); return; }
+        toast('บันทึกลงบัญชีไม่ได้ จึงเก็บไว้ในเบราว์เซอร์เครื่องนี้แทน');
+      }
+    }
+    localEntries.push(norm(body, 'l_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)));
+    saveLocal();
+    render();
+  }
+
+  function removeEntry(id) {
+    var rec = null;
+    var li = -1;
+    localEntries.forEach(function (e, i) { if (e.id === id) { rec = e; li = i; } });
+    if (li >= 0) {
+      localEntries.splice(li, 1);
+      saveLocal();
+      render();
+    } else {
+      dbEntries.forEach(function (e) { if (e.id === id) rec = e; });
+      if (!rec || !dbRef) return;
+      dbRef.doc(id).delete().catch(function () { toast('ลบรายการไม่สำเร็จ ลองอีกครั้ง'); });
+    }
+    if (rec) {
+      var copy = { amount: rec.amount, cat: rec.cat, note: rec.note, date: rec.date };
+      toast('ลบรายการแล้ว', 'เลิกทำ', function () { addEntry(copy); });
+    }
+  }
+
+  async function initDb() {
+    if (!(window.claude && window.claude.use)) { pending = false; render(); return; }
+    try {
+      var res = await Promise.all([window.claude.use('user'), window.claude.use('db')]);
+      var user = res[0], db = res[1];
+      var uid = user ? await user.id() : null;
+      if (!db || !uid) { pending = false; render(); return; }
+      dbRef = db.doc('data/users/' + uid + '/profile').collection('expenses');
+      slowTimer = setTimeout(function () {
+        if (pending) { pending = false; slow = true; render(); }
+      }, 10000);
+      dbRef.onSnapshot(function (snap) {
+        dbEntries = snap.docs.map(function (d) { return { id: d.id, data: d.data() }; })
+          .filter(function (x) { return validEntry(x.data); })
+          .map(function (x) { return norm(x.data, x.id); });
+        if (!snap.metadata.fromCache || snap.size > 0) {
+          pending = false; slow = false; clearTimeout(slowTimer);
+        }
+        render();
+      }, function () {
+        pending = false; slow = true; clearTimeout(slowTimer); render();
+      });
+    } catch (e) {
+      pending = false; dbRef = null; render();
+    }
+  }
+
+  /* ---------- render ---------- */
+  function dayLabel(s) {
+    var n = new Date();
+    var today = ymd(n);
+    var yest = ymd(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1));
+    var base = parseYmd(s).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short' });
+    return s === today ? 'วันนี้ · ' + base : s === yest ? 'เมื่อวาน · ' + base : base;
+  }
+
+  function donutSvg(total, rows) {
+    var R = 44, C = 2 * Math.PI * R, off = 0;
+    var gap = rows.length > 1 ? 1.4 : 0;
+    var segs = rows.map(function (r) {
+      var len = C * r.amount / total;
+      var dash = Math.max(len - gap, 0.5);
+      var s = '<circle cx="60" cy="60" r="' + R + '" fill="none" stroke-width="14" style="stroke:var(--c-' + r.id + ')" stroke-dasharray="' +
+        dash.toFixed(2) + ' ' + (C - dash).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 60 60)"/>';
+      off += len;
+      return s;
+    }).join('');
+    return '<svg viewBox="0 0 120 120" role="img" aria-label="สัดส่วนรายจ่ายตามหมวด">' +
+      '<circle cx="60" cy="60" r="' + R + '" fill="none" stroke-width="14" style="stroke:var(--track)"/>' + segs + '</svg>';
+  }
+
+  function render() {
+    var now = new Date();
+    var real = dbEntries.concat(localEntries);
+    var useSample = real.length === 0 && !pending;
+    var all = real.length ? real : (useSample ? sampleEntries() : []);
+    var key = view.y + '-' + pad(view.m + 1);
+    var me = all.filter(function (e) { return e.date.slice(0, 7) === key; }).sort(function (a, b) {
+      return a.date < b.date ? 1 : a.date > b.date ? -1 : b.ts - a.ts;
+    });
+
+    var isCur = view.y === now.getFullYear() && view.m === now.getMonth();
+    var days = isCur ? now.getDate() : new Date(view.y, view.m + 1, 0).getDate();
+    var total = r2(me.reduce(function (s, e) { return s + e.amount; }, 0));
+
+    $('month-label').textContent = new Date(view.y, view.m, 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+    $('next').disabled = (view.y * 12 + view.m) >= (now.getFullYear() * 12 + now.getMonth());
+    $('jump').hidden = isCur;
+    $('st-total').textContent = money(total);
+    $('st-avg').textContent = money(total / days);
+    $('st-count').textContent = nf0.format(me.length) + ' รายการ';
+    $('sample-note').hidden = !useSample;
+
+    /* summary */
+    var byCat = {};
+    me.forEach(function (e) { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
+    var rows = Object.keys(byCat).map(function (id) { return { id: id, amount: r2(byCat[id]) }; })
+      .sort(function (a, b) { return b.amount - a.amount; });
+    var sumHtml;
+    if (!rows.length) {
+      sumHtml = '<div class="donut">' + donutSvg(1, []) + '<div class="mid"><small>รวม</small><b class="num">฿0</b></div></div>' +
+        '<p class="empty" style="padding-top:0">' + (pending ? 'กำลังโหลดข้อมูล…' : 'ยังไม่มีรายจ่ายในเดือนนี้') + '</p>';
+    } else {
+      sumHtml = '<div class="donut">' + donutSvg(total, rows) + '<div class="mid"><small>รวม</small><b class="num">' + money(total) + '</b></div></div>' +
+        '<ul class="cats num">' + rows.map(function (r) {
+          var share = r.amount / total * 100;
+          var pct = share < 1 ? '<1%' : Math.round(share) + '%';
+          return '<li><div class="cat-head"><span class="dot" style="background:var(--c-' + r.id + ')"></span>' +
+            '<span class="cat-name">' + esc(CAT[r.id].name) + '</span><span class="cat-amt">' + money(r.amount) + '</span>' +
+            '<span class="cat-pct">' + pct + '</span></div>' +
+            '<div class="bar"><span style="width:' + share.toFixed(1) + '%;background:var(--c-' + r.id + ')"></span></div></li>';
+        }).join('') + '</ul>';
+    }
+    $('summary').innerHTML = sumHtml;
+
+    /* daily list */
+    var listHtml = '';
+    if (!me.length) {
+      listHtml = '<p class="empty">' + (pending ? 'กำลังโหลดรายการ…' : 'ยังไม่มีรายการในเดือนนี้ เพิ่มรายการแรกได้ที่ช่อง “เพิ่มรายจ่าย”') + '</p>';
+    } else {
+      var order = [], groups = {};
+      me.forEach(function (e) {
+        if (!groups[e.date]) { groups[e.date] = []; order.push(e.date); }
+        groups[e.date].push(e);
+      });
+      listHtml = order.map(function (d) {
+        var dayTotal = r2(groups[d].reduce(function (s, e) { return s + e.amount; }, 0));
+        return '<section class="day"><h3 class="day-h"><span>' + esc(dayLabel(d)) + '</span><span class="t num">' + money(dayTotal) + '</span></h3><ul class="items num">' +
+          groups[d].map(function (e) {
+            var cname = CAT[e.cat].name;
+            var title = e.note ? esc(e.note) : esc(cname);
+            var sub = e.note ? '<span class="sub">' + esc(cname) + '</span>' : '';
+            var del = e.sample ? '<span class="del-space"></span>' :
+              '<button type="button" class="del" data-del="' + esc(e.id) + '" aria-label="ลบรายการ ' + esc(e.note || cname) + ' ' + money(e.amount) + '">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+            return '<li class="item"><span class="dot" style="background:var(--c-' + e.cat + ')"></span>' +
+              '<span class="main"><span class="title">' + title + '</span>' + sub + '</span>' +
+              '<span class="amt">' + money(e.amount) + '</span>' + del + '</li>';
+          }).join('') + '</ul></section>';
+      }).join('');
+    }
+    $('list').innerHTML = listHtml;
+
+    /* storage note */
+    var note;
+    if (pending) note = 'กำลังโหลดข้อมูล…';
+    else if (slow) note = 'ยังเชื่อมต่อที่เก็บข้อมูลไม่ได้ ข้อมูลที่เห็นอาจไม่ล่าสุด';
+    else if (dbRef) note = 'ข้อมูลของคุณเก็บไว้เป็นส่วนตัวในบัญชี คนอื่นมองไม่เห็น';
+    else note = 'ข้อมูลเก็บไว้ในเบราว์เซอร์เครื่องนี้ ถ้าล้างข้อมูลเว็บไซต์ รายการจะหายไป';
+    $('store-note').textContent = note;
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function toast(msg, actLabel, act) {
+    $('toast-msg').textContent = msg;
+    var b = $('toast-act');
+    b.hidden = !actLabel;
+    b.textContent = actLabel || '';
+    b.onclick = function () { $('toast').hidden = true; if (act) act(); };
+    $('toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $('toast').hidden = true; }, 6000);
+  }
+
+  /* ---------- form ---------- */
+  $('chips').innerHTML = CATS.map(function (c, i) {
+    return '<label class="chip"><input type="radio" name="cat" value="' + c.id + '"' + (i === 0 ? ' checked' : '') + '>' +
+      '<span><i class="dot" style="background:var(--c-' + c.id + ')"></i>' + esc(c.name) + '</span></label>';
+  }).join('');
+  $('date').value = ymd(new Date());
+
+  function showErr(msg) {
+    var el = $('amount-err');
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+  $('amount').addEventListener('input', function () { showErr(''); });
+
+  $('form').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var amt = r2(Number(String($('amount').value).replace(/[,\s฿]/g, '')));
+    if (!(amt > 0) || amt >= 10000000) {
+      showErr('กรอกจำนวนเงินเป็นตัวเลขที่มากกว่า 0 เช่น 60 หรือ 125.50');
+      $('amount').focus();
+      return;
+    }
+    var date = $('date').value || ymd(new Date());
+    var cat = (document.querySelector('input[name="cat"]:checked') || {}).value || 'other';
+    var rec = { amount: amt, cat: cat, note: $('note').value.trim(), date: date };
+    var d = parseYmd(date);
+    view = { y: d.getFullYear(), m: d.getMonth() };
+    var btn = $('save');
+    btn.disabled = true;
+    await addEntry(rec);
+    btn.disabled = false;
+    $('amount').value = '';
+    $('note').value = '';
+    showErr('');
+    render();
+    $('amount').focus();
+    toast('บันทึกแล้ว ' + money(amt));
+  });
+
+  /* ---------- navigation ---------- */
+  $('prev').addEventListener('click', function () {
+    view = view.m === 0 ? { y: view.y - 1, m: 11 } : { y: view.y, m: view.m - 1 };
+    render();
+  });
+  $('next').addEventListener('click', function () {
+    view = view.m === 11 ? { y: view.y + 1, m: 0 } : { y: view.y, m: view.m + 1 };
+    render();
+  });
+  $('jump').addEventListener('click', function () {
+    var n = new Date();
+    view = { y: n.getFullYear(), m: n.getMonth() };
+    render();
+  });
+  $('list').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-del]');
+    if (b) removeEntry(b.getAttribute('data-del'));
+  });
+
+  render();
+  initDb();
+})();
+</script>
+
+</body></html>
