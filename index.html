@@ -1,12 +1,16 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>สมุดรายจ่าย</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Prompt:wght@500;600&display=swap">
 <style>
 /* Layout: ฟอร์มและสรุปหมวดอยู่คอลัมน์ซ้าย รายการรายวันอยู่คอลัมน์ขวา บนมือถือเรียงลงมาตามลำดับการใช้งาน */
 :root {
+  color-scheme: light;
   --bg: #eef4f3;
   --surface: #ffffff;
   --fg: #10302d;
@@ -71,7 +75,9 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
+  margin: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-body);
@@ -203,6 +209,8 @@ fieldset legend { margin-bottom: 8px; }
   .card { padding: 16px; }
 }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="top">
@@ -304,10 +312,9 @@ fieldset legend { margin-bottom: 8px; }
   var dbEntries = [];
   var localEntries = [];
   var dbRef = null;
-  var pending = !!(window.claude && window.claude.use);
+  var pending = true;
   var slow = false;
-  var slowTimer = null;
-  var now0 = new Date();
+    var now0 = new Date();
   var view = { y: now0.getFullYear(), m: now0.getMonth() };
 
   function validEntry(o) {
@@ -351,7 +358,7 @@ fieldset legend { margin-bottom: 8px; }
   async function addEntry(rec) {
     var body = { amount: rec.amount, cat: rec.cat, note: rec.note, date: rec.date, ts: Date.now() };
     if (dbRef) {
-      try { await dbRef.add(body); return; }
+      try { await fbAdd(body); return; }
       catch (e) {
         if (e && e.code === 'quota_exceeded') { toast('ที่เก็บข้อมูลเต็มแล้ว ลบรายการเก่าบางส่วนก่อนจึงจะเพิ่มได้'); return; }
         toast('บันทึกลงบัญชีไม่ได้ จึงเก็บไว้ในเบราว์เซอร์เครื่องนี้แทน');
@@ -372,8 +379,10 @@ fieldset legend { margin-bottom: 8px; }
       render();
     } else {
       dbEntries.forEach(function (e) { if (e.id === id) rec = e; });
-      if (!rec || !dbRef) return;
-      dbRef.doc(id).delete().catch(function () { toast('ลบรายการไม่สำเร็จ ลองอีกครั้ง'); });
+      if (!rec) return;
+      dbEntries = dbEntries.filter(function (e) { return e.id !== id; });
+      render();
+      fbDel(id).catch(function () { toast('ลบรายการไม่สำเร็จ ลองอีกครั้ง'); loadRemote(); });
     }
     if (rec) {
       var copy = { amount: rec.amount, cat: rec.cat, note: rec.note, date: rec.date };
@@ -381,31 +390,37 @@ fieldset legend { margin-bottom: 8px; }
     }
   }
 
-  async function initDb() {
-    if (!(window.claude && window.claude.use)) { pending = false; render(); return; }
+  var DB_URL = 'https://alwayz-f304a-default-rtdb.asia-southeast1.firebasedatabase.app';
+  var DB_PATH = 'expenses';
+  function fbUrl(sub) { return DB_URL + '/' + DB_PATH + (sub ? '/' + sub : '') + '.json'; }
+  async function fbAdd(body) {
+    var r = await fetch(fbUrl(), { method: 'POST', body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('add ' + r.status);
+    var j = await r.json();
+    dbEntries.push(norm(body, j.name));
+    render();
+  }
+  async function fbDel(id) {
+    var r = await fetch(fbUrl(encodeURIComponent(id)), { method: 'DELETE' });
+    if (!r.ok) throw new Error('del ' + r.status);
+  }
+  async function loadRemote() {
     try {
-      var res = await Promise.all([window.claude.use('user'), window.claude.use('db')]);
-      var user = res[0], db = res[1];
-      var uid = user ? await user.id() : null;
-      if (!db || !uid) { pending = false; render(); return; }
-      dbRef = db.doc('data/users/' + uid + '/profile').collection('expenses');
-      slowTimer = setTimeout(function () {
-        if (pending) { pending = false; slow = true; render(); }
-      }, 10000);
-      dbRef.onSnapshot(function (snap) {
-        dbEntries = snap.docs.map(function (d) { return { id: d.id, data: d.data() }; })
-          .filter(function (x) { return validEntry(x.data); })
-          .map(function (x) { return norm(x.data, x.id); });
-        if (!snap.metadata.fromCache || snap.size > 0) {
-          pending = false; slow = false; clearTimeout(slowTimer);
-        }
-        render();
-      }, function () {
-        pending = false; slow = true; clearTimeout(slowTimer); render();
-      });
+      var r = await fetch(fbUrl(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('get ' + r.status);
+      var obj = (await r.json()) || {};
+      dbEntries = Object.keys(obj).filter(function (k) { return validEntry(obj[k]); })
+        .map(function (k) { return norm(obj[k], k); });
+      dbRef = true; pending = false; slow = false;
     } catch (e) {
-      pending = false; dbRef = null; render();
+      pending = false; slow = true;
     }
+    render();
+  }
+  function initDb() {
+    loadRemote();
+    setInterval(function () { if (!document.hidden) loadRemote(); }, 20000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) loadRemote(); });
   }
 
   /* ---------- render ---------- */
@@ -507,8 +522,8 @@ fieldset legend { margin-bottom: 8px; }
     /* storage note */
     var note;
     if (pending) note = 'กำลังโหลดข้อมูล…';
-    else if (slow) note = 'ยังเชื่อมต่อที่เก็บข้อมูลไม่ได้ ข้อมูลที่เห็นอาจไม่ล่าสุด';
-    else if (dbRef) note = 'ข้อมูลของคุณเก็บไว้เป็นส่วนตัวในบัญชี คนอื่นมองไม่เห็น';
+    else if (slow) note = 'เชื่อมต่อ Firebase ไม่ได้ในขณะนี้ ข้อมูลที่เห็นอาจไม่ล่าสุด';
+    else if (dbRef) note = 'ข้อมูลเก็บไว้ใน Firebase และอัปเดตอัตโนมัติทุก 20 วินาที';
     else note = 'ข้อมูลเก็บไว้ในเบราว์เซอร์เครื่องนี้ ถ้าล้างข้อมูลเว็บไซต์ รายการจะหายไป';
     $('store-note').textContent = note;
   }
@@ -588,5 +603,5 @@ fieldset legend { margin-bottom: 8px; }
   initDb();
 })();
 </script>
-
-</body></html>
+</body>
+</html>
